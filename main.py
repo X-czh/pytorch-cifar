@@ -1,43 +1,53 @@
-from __future__ import print_function
-import os
+from __future__ import print_function, division
 import argparse
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import torch.backends.cudnn as cudnn
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 from models import *
 
 # Training settings
-parser = argparse.ArgumentParser(description="PyTorch CIFAR Playground")
-parser.add_argument("--batch-size", type=int, default=64, metavar="N",
-                    help = "input batch size for training (default: 64)")
-parser.add_argument("--test-batch-size", type=int, default=1000, metavar="N",
-                    help="input batch size for testing (default: 1000)")
-parser.add_argument("--epochs", type=int, default=10, metavar="N",
-                    help="number of epochs to train (default: 10)")
-parser.add_argument("--lr", type=float, default=0.01, metavar="LR",
-                    help="learning rate (default: 0.01)")
-parser.add_argument("--momentum", type=float, default=0.5, metavar="M",
-                    help="SGD momentum (default: 0.5)")
-parser.add_argument("--no-cuda", action="store_true", default=False,
-                    help="disables CUDA training")
-parser.add_argument("--seed", type=int, default=1, metavar="S",
-                    help="random seed (default: 1)")
-parser.add_argument("--log-interval", type=int, default=10, metavar="N",
-                    help="how many batches to wait before logging training status")
+parser = argparse.ArgumentParser(description='PyTorch CIFAR Playground')
+# parser.add_argument('--model', type=str, default='lenet', metavar='MODEL',
+                    # help='model architecture (default: lenet)')
+parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+                    help = 'input batch size for training (default: 128)')
+parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+                    help='input batch size for testing (default: 1000)')
+parser.add_argument('--epochs', type=int, default=10, metavar='N',
+                    help='number of epochs to train (default: 10)')
+parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
+                    help='learning rate (default: 0.01)')
+parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+                    help='SGD momentum (default: 0.9)')
+parser.add_argument('--weight-decay', type=float, default=1e-4, metavar='W',
+                    help='weight decay (default: 1e-4)')
+parser.add_argument('--workers', type=int, default=2, metavar='N',
+                    help='number of data loading workers (default: 2)')
+parser.add_argument('--no-cuda', action='store_true', default=False,
+                    help='disables CUDA training')
+parser.add_argument('--seed', type=int, default=1, metavar='S',
+                    help='random seed (default: 1)')
+parser.add_argument('--resume', type=bool, default=False, metavar='T/F',
+                    help='resume from latest checkpoint (default: False)')
+parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+                    help='how many batches to wait before logging training status')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
+# Set the seed for generating random numbers
 torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-# Data
-kwargs = {"num_workers": 1, "pin_memory": True} if args.cuda else {}
+# Data loading code
+kwargs = {'num_workers': args.workers, 'pin_memory': True} if args.cuda else {}
 transform_train = transforms.Compose([
-    transforms.RandomCrop(32,padding=4),
+    transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
@@ -48,9 +58,9 @@ transform_test = transforms.Compose([
     transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
                          std=(0.2023, 0.1994, 0.2010))
 ])
-trainset = datasets.CIFAR10(root="/home/x-czh/data_set", train=True,
+trainset = datasets.CIFAR10(root='/home/x-czh/data_set', train=True,
                             transform=transform_train, download=False)
-testset = datasets.CIFAR10(root="/home/x-czh/data_set", train=False,
+testset = datasets.CIFAR10(root='/home/x-czh/data_set', train=False,
                            transform=transform_test, download=False)
 train_loader = torch.utils.data.DataLoader(
     dataset=trainset, 
@@ -65,24 +75,38 @@ test_loader = torch.utils.data.DataLoader(
     **kwargs
 )
 
-# Model
-args.resume = False
+# Model loading code
 if args.resume:
-    print("==> Resuming from checkpoint..")
-    assert os.path.isdir("checkpoint"), "Error: no checkpoint directory found!"
-    checkpoint = torch.load("./checkpoint/ckpt.t7")
-    net = checkpoint["net"]
-    best_acc = checkpoint["acc"]
-    start_epoch = checkpoint["epoch"]
+    # Load checkpoint.
+    print('==> Resuming from checkpoint..')
+    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+    checkpoint = torch.load('./checkpoint/ckpt.t7')
+    model = checkpoint['model']
+    best_acc = checkpoint['acc']
+    start_epoch = checkpoint['epoch']
 else:
-    print("==> Building model..")
+    print('==> Building model..')
+    # model = MLP()
     model = LeNet()
+    # model = VGG('VGG19')
+    # model = ResNet()
 
 if args.cuda:
     model.cuda()
+    model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
+    cudnn.benchmark = True
 
+# Define loss function (criterion) and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+optimizer = optim.SGD(
+    params=model.parameters(),
+    lr=args.lr,
+    momentum=args.momentum,
+    weight_decay=args.weight_decay
+)
+
+if args.cuda:
+    criterion.cuda()
 
 # Training
 def train(epoch):
