@@ -87,9 +87,9 @@ if args.resume:
 else:
     print('==> Building model..')
     # model = MLP()
-    model = LeNet()
+    # model = LeNet()
     # model = VGG('VGG19')
-    # model = ResNet()
+    model = ResNet20()
 
 if args.cuda:
     model.cuda()
