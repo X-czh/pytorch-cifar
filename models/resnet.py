@@ -42,12 +42,12 @@ class BasicBlock(nn.Module):
 
 class Bottleneck(nn.Module):
     expansion = 4
-    
+
     def __init__(self, in_channels, out_channels, stride=1, downsample=False):
         super(Bottleneck, self).__init__()
 
         self.downsample = downsample
-        
+
         self.conv1 = nn.Conv2d(in_channels, out_channels,
                                kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channels)
@@ -83,7 +83,7 @@ class ResNet(nn.Module):
         self.conv2_x = self._make_layers(block, multiplier, filters[1])
         self.conv3_x = self._make_layers(block, multiplier, filters[2])
         self.conv4_x = self._make_layers(block, multiplier, filters[3])
-        self.linear = nn.Linear(self.in_channels * block.expansion, 10)
+        self.fc = nn.Linear(self.in_channels * block.expansion, 10)
 
     def _make_layers(self, block, num_block, out_channels):
         layers = []
@@ -101,8 +101,20 @@ class ResNet(nn.Module):
         x = self.conv4_x(x)
         x = F.avg_pool2d(x, 4)
         x = x.view(x.size(0), -1)
-        x = self.linear(x)
+        x = self.fc(x)
         return x
 
 def ResNet20():
     return ResNet(BasicBlock, 3, [16, 16, 32, 64])
+
+def ResNet32():
+    return ResNet(BasicBlock, 4, [16, 16, 32, 64])
+
+def ResNet44():
+    return ResNet(BasicBlock, 5, [16, 16, 32, 64])
+
+def ResNet56():
+    return ResNet(Bottleneck, 6, [16, 16, 32, 64])
+
+def ResNet110():
+    return ResNet(Bottleneck, 18, [16, 16, 32, 64])
