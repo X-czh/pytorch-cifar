@@ -83,7 +83,7 @@ class ResNet(nn.Module):
         self.conv2_x = self._make_layers(block, multiplier, filters[1])
         self.conv3_x = self._make_layers(block, multiplier, filters[2])
         self.conv4_x = self._make_layers(block, multiplier, filters[3])
-        self.fc = nn.Linear(self.in_channels * block.expansion, 10)
+        self.fc = nn.Linear(self.in_channels, 10)
 
     def _make_layers(self, block, num_block, out_channels):
         layers = []

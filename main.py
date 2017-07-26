@@ -87,7 +87,7 @@ def get_model(args):
         # model = MLP()
         # model = LeNet()
         # model = VGG('VGG19')
-        model = ResNet20()
+        model = ResNet56()
         best_acc = 0
         start_epoch = 1
 
@@ -160,7 +160,7 @@ def test(args, test_loader, model, criterion, epoch, progress, best_acc):
 
     # Save checkpoint
     if test_acc > best_acc:
-        print('Saving..')
+        print('Saving checkpoint..')
         state = {
             'model': model.module if args.cuda else model,
             'acc': test_acc,
