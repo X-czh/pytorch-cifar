@@ -1,6 +1,8 @@
 from __future__ import print_function, division
+
 import argparse
 import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,14 +10,16 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-from models import *
+
+from utils import get_net
+from utils import get_current_time
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Playground')
 parser.add_argument('--path', type=str, default='/home/x-czh/data_set', metavar='PATH',
                     help='data path (default: /home/x-czh/data_set)')
-# parser.add_argument('--model', type=str, default='lenet', metavar='MODEL',
-                    # help='model architecture (default: lenet)')
+parser.add_argument('--model', type=str, default='lenet', metavar='MODEL',
+                    help='model architecture (default: lenet)')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help = 'input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
@@ -84,10 +88,7 @@ def get_model(args):
         start_epoch = checkpoint['epoch']
     else:
         print('==> Building model..')
-        # model = MLP()
-        # model = LeNet()
-        # model = VGG('VGG19')
-        model = ResNet56()
+        model = get_net(args.model)
         best_acc = 0
         start_epoch = 1
 
@@ -195,6 +196,9 @@ if __name__ == '__main__':
         train(args, train_loader, model, criterion, optimizer, epoch, progress)
         test(args, test_loader, model, criterion, epoch, progress, best_acc)
     
-    # Save info
+    # Save progress
     import cPickle as pickle
-    pickle.dump(progress, open('./progress.pkl','wb'))
+    
+    current_time = get_current_time()
+    pickle.dump(progress, open('./' + args.model + '_progress_'
+        + current_time + '.pkl','wb'))
