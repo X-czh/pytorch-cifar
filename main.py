@@ -39,7 +39,7 @@ parser.add_argument('--resume', type=bool, default=False, metavar='T/F',
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 
-def get_data_loader():
+def get_data_loader(args):
     kwargs = {'num_workers': args.workers, 'pin_memory': True} if args.cuda else {}
     
     transform_train = transforms.Compose([
@@ -73,7 +73,7 @@ def get_data_loader():
 
     return train_loader, test_loader
 
-def get_model():
+def get_model(args):
     if args.resume:
         # Load checkpoint.
         print('==> Resuming from checkpoint..')
@@ -88,21 +88,23 @@ def get_model():
         # model = LeNet()
         # model = VGG('VGG19')
         model = ResNet20()
+        best_acc = 0
+        start_epoch = 1
 
     if args.cuda:
         model.cuda()
         model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
         cudnn.benchmark = True
 
-    return model
+    return model, best_acc, start_epoch
 
-def get_criterion():
+def get_criterion(args):
     criterion = nn.CrossEntropyLoss()
     if args.cuda:
         criterion.cuda()
     return criterion
 
-def get_optimizer():
+def get_optimizer(args, model):
     optimizer = optim.SGD(
         params=model.parameters(),
         lr=args.lr,
@@ -111,7 +113,7 @@ def get_optimizer():
     )
     return optimizer
 
-def train(train_loader, model, criterion, optimizer, epoch, progress):
+def train(args, train_loader, model, criterion, optimizer, epoch, progress):
     model.train() # sets the module in training mode
     for batch_idx, (data, target) in enumerate(train_loader):
         correct = 0
@@ -126,16 +128,17 @@ def train(train_loader, model, criterion, optimizer, epoch, progress):
         optimizer.step()
         pred = output.data.max(1)[1]
         correct = pred.eq(target.data).cpu().sum()
+        train_acc = 100. * correct / len(data)
+
+        # Print and save progress
         partial_epoch = epoch + batch_idx / len(train_loader) - 1
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.data[0]))
-        train_acc = 100. * correct / len(data)
         progress['train'].append((partial_epoch, loss.data[0], train_acc))
-        print(train_acc)
 
-def test(test_loader, model, criterion, epoch, progress):
+def test(args, test_loader, model, criterion, epoch, progress, best_acc):
     model.eval() # sets the module in evaluation mode
     test_loss = 0
     correct = 0
@@ -148,14 +151,27 @@ def test(test_loader, model, criterion, epoch, progress):
         pred = output.data.max(1)[1]
         correct += pred.eq(target.data).cpu().sum()
 
+    # Print and save progress
     test_loss /= len(test_loader.dataset)
     test_acc = 100. * correct / len(test_loader.dataset) 
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset), test_acc))
     progress['test'].append((epoch, test_loss, test_acc))
 
+    # Save checkpoint
+    if test_acc > best_acc:
+        print('Saving..')
+        state = {
+            'model': model.module if args.cuda else model,
+            'acc': test_acc,
+            'epoch': epoch,
+        }
+        if not os.path.isdir('checkpoint'):
+            os.mkdir('checkpoint')
+        torch.save(state, './checkpoint/ckpt.t7')
+        best_acc = test_acc
+
 if __name__ == '__main__':
-    global args
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -165,21 +181,20 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(args.seed)
 
     # Set data loader, model, criteriron, and optimizer
-    train_loader, test_loader = get_data_loader()
-    model = get_model()
-    criterion = get_criterion()
-    optimizer = get_optimizer()
+    train_loader, test_loader = get_data_loader(args)
+    model, best_acc, start_epoch = get_model(args)
+    criterion = get_criterion(args)
+    optimizer = get_optimizer(args, model)
 
     # Train
     progress = {}
     progress['train'] = []
     progress['test'] = []
 
-    for epoch in range(1, args.epochs + 1):
-        train(train_loader, model, criterion, optimizer, epoch, progress)
-        test(test_loader, model, criterion, epoch, progress)
+    for epoch in range(start_epoch, args.epochs + 1):
+        train(args, train_loader, model, criterion, optimizer, epoch, progress)
+        test(args, test_loader, model, criterion, epoch, progress, best_acc)
     
     # Save info
     import cPickle as pickle
-
-    pickle.dump(progress, open('./info.pkl','wb'))
+    pickle.dump(progress, open('./progress.pkl','wb'))
