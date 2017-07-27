@@ -24,6 +24,6 @@ def get_net(model_name):
     return model_dict[model_name]
 
 def get_current_time():
-    """ Return current time in the farmat of %yyyy-%mm-%dd_%hh-%mm-%ss """
+    """ Return current time in the format of %yyyy-%mm-%dd_%hh-%mm-%ss """
     now = datetime.datetime.now()
     return now.strftime('%Y-%m-%d_%H-%M-%S')
