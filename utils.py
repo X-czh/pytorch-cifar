@@ -15,7 +15,12 @@ model_dict = {
     'resnet32': ResNet32(),
     'resnet44': ResNet44(),
     'resnet56': ResNet56(),
-    'resnet110': ResNet110()
+    'resnet110': ResNet110(),
+    'densenet40': DenseNet40(),
+    'densenet100': DenseNet100(),
+    'densenet250': DenseNet250(),
+    'densenet190': DenseNet190(),
+    'densenet10':DenseNet10()
 }
 
 def get_net(model_name):
