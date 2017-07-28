@@ -1,10 +1,10 @@
 """
 VGG with PyTorch
 
-VGG 11/13/16/19 architectures
+VGG 11/13/16/19 architectures with classifier modified for CIFAR
 
 Implemented the following paper:
-Karen Simonyan, Andrew Zisserman. "Very Deep Convolutional Networks for Large-Scale Image Recognition".
+Karen Simonyan, Andrew Zisserman. "Very Deep Convolutional Networks for Large-Scale Image Recognition."
 """
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,19 +17,23 @@ cfg = {
 }
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name):
+    def __init__(self, vgg_name, num_classes=10):
         super(VGG, self).__init__()
         self.feature_extractor = self._make_layers(cfg[vgg_name])
-        self.fc1 = nn.Linear(512, 512)
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, 10)
+        self.classifier = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(512, 512),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(512, num_classes)
+        )
 
     def forward(self, x):
         x = self.feature_extractor(x)
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.classifier(x)
         return x
 
     def _make_layers(self, config):

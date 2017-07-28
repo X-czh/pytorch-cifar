@@ -5,8 +5,8 @@ ResNet Basic && ResNet with bottelneck architectures [1]
 ResNet with pre-activation architectures [2]
 
 Implemented the following papers:
-[1] Kaiming He, et al. "Deep Residual Learning for Image Recognition".
-[2] Kaiming He, et al. "Identity Mappings in Deep Residual Networks".
+[1] Kaiming He, et al. "Deep Residual Learning for Image Recognition."
+[2] Kaiming He, et al. "Identity Mappings in Deep Residual Networks."
 """
 import torch.nn as nn
 import torch.nn.functional as F
@@ -159,7 +159,7 @@ class ResNet(nn.Module):
 
         if pre_act:
             layers.append(nn.BatchNorm2d(self.in_channels))
-            layers.append(nn.ReLU())
+            layers.append(nn.ReLU(inplace=True))
 
         layers.append(block(self.in_channels, out_channels, stride))
         self.in_channels = block.expansion * out_channels
@@ -169,7 +169,7 @@ class ResNet(nn.Module):
 
         if post_act:
             layers.append(nn.BatchNorm2d(self.in_channels))
-            layers.append(nn.ReLU())
+            layers.append(nn.ReLU(inplace=True))
 
         return nn.Sequential(*layers)
 

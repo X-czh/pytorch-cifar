@@ -4,7 +4,7 @@ DenseNet with PyTorch
 DenseNet Basic && DenseNet-BC (with Bottleneck and Compression) architectures
 
 Implemented the following paper:
-Gao Huang, et al. "Densely Connected Convolutional Networks".
+Gao Huang, et al. "Densely Connected Convolutional Networks."
 """
 import math
 
