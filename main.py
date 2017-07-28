@@ -227,5 +227,5 @@ if __name__ == '__main__':
     import cPickle as pickle
 
     current_time = get_current_time()
-    pickle.dump(progress, open('./' + args.model + '-resume' if args.resume else '' +
+    pickle.dump(progress, open('./' + args.model + ('-resume' if args.resume else '') +
                                '_progress_' + current_time + '.pkl', 'wb'))
