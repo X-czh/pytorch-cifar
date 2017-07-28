@@ -16,6 +16,8 @@ model_dict = {
     'resnet44': ResNet44(),
     'resnet56': ResNet56(),
     'resnet110': ResNet110(),
+    'resnet164': ResNet164(),
+    'resnet1001': ResNet1001(),
     'densenet40': DenseNet40(),
     'densenet100': DenseNet100(),
     'densenet250': DenseNet250(),
