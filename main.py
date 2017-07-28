@@ -83,7 +83,8 @@ def get_model(args):
         print('==> Resuming from checkpoint..')
         assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
         checkpoint = torch.load('./checkpoint/ckpt.t7')
-        model = checkpoint['model']
+        model = get_net(checkpoint['model_name'])
+        model.load_state_dict(checkpoint['model_para'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
     else:
@@ -163,9 +164,10 @@ def test(args, test_loader, model, criterion, epoch, progress, best_acc):
     if test_acc > best_acc:
         print('Saving checkpoint..')
         state = {
-            'model': model.module if args.cuda else model,
+            'model_name': args.model,
+            'model_para': model.state_dict(),
             'acc': test_acc,
-            'epoch': epoch,
+            'epoch': epoch
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
