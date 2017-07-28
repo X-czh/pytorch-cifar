@@ -34,3 +34,26 @@ def get_current_time():
     """ Return current time in the format of %yyyy-%mm-%dd_%hh-%mm-%ss """
     now = datetime.datetime.now()
     return now.strftime('%Y-%m-%d_%H-%M-%S')
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+    def get_sum(self):
+        return self.sum
+
+    def get_avg(self):
+        return self.avg
