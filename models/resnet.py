@@ -142,7 +142,7 @@ class ResNet(nn.Module):
         self.conv1 = conv3x3(3, filters[0])
         self.in_channels = filters[0]
         self.conv2_x = self._make_layers(block, multiplier, filters[1],
-                                         stride=2, pre_act=not pre_act_block)
+                                         stride=1, pre_act=not pre_act_block)
         self.conv3_x = self._make_layers(block, multiplier, filters[2],
                                          stride=2)
         self.conv4_x = self._make_layers(block, multiplier, filters[3],
@@ -178,7 +178,7 @@ class ResNet(nn.Module):
         x = self.conv2_x(x)
         x = self.conv3_x(x)
         x = self.conv4_x(x)
-        x = F.avg_pool2d(x, 4)
+        x = F.avg_pool2d(x, 8)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
