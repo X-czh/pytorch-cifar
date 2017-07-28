@@ -193,7 +193,7 @@ def ResNet44():
     return ResNet(BasicBlock, 7, [16, 16, 32, 64])
 
 def ResNet56():
-    return ResNet(Bottleneck, 9, [16, 16, 32, 64])
+    return ResNet(BasicBlock, 9, [16, 16, 32, 64])
 
 def ResNet110():
     return ResNet(BasicBlock, 18, [16, 16, 32, 64])

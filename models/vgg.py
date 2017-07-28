@@ -1,5 +1,10 @@
 """
 VGG with PyTorch
+
+VGG 11/13/16/19 architectures
+
+Implemented the following paper:
+Karen Simonyan, Andrew Zisserman. "Very Deep Convolutional Networks for Large-Scale Image Recognition".
 """
 import torch.nn as nn
 import torch.nn.functional as F
