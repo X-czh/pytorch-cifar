@@ -12,6 +12,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+cfg = {
+    40: 12,
+    100: 12,
+    250: 24,
+    190: 48
+}
+
 class BasicBlock(nn.Module):
     def __init__(self, in_channels, growth_rate):
         super(BasicBlock, self).__init__()
@@ -51,12 +58,14 @@ class Transition(nn.Module):
         return x
 
 class DenseNet(nn.Module):
-    def __init__(self, depth, growth_rate, bottleneck=True, reduction=0.5, num_classes=10):
+    def __init__(self, depth, bottleneck=True, reduction=0.5, num_classes=10):
+        assert depth in cfg, 'Error: model depth invalid or undefined!'
+
         super(DenseNet, self).__init__()
-        
         num_block = (depth - 4) // 3
         if bottleneck:
             num_block //= 2
+        growth_rate = cfg[depth]
 
         in_channels = 3
         out_channels = 2*growth_rate
@@ -98,19 +107,3 @@ class DenseNet(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
-
-def DenseNet40():
-    return DenseNet(40, 12, bottleneck=False)
-
-def DenseNet100():
-    return DenseNet(100, 12)
-
-def DenseNet250():
-    return DenseNet(250, 24)
-
-def DenseNet190():
-    return DenseNet(190, 48)
-
-def DenseNet10():
-    """ Low memory consumption, just for testing """
-    return DenseNet(10, 12)

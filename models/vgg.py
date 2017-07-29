@@ -1,7 +1,7 @@
 """
 VGG with PyTorch
 
-VGG 11/13/16/19 architectures with classifier modified for CIFAR
+VGG-11/13/16/19 architectures with classifier modified for CIFAR
 
 Implemented the following paper:
 Karen Simonyan, Andrew Zisserman. "Very Deep Convolutional Networks for Large-Scale Image Recognition."
@@ -10,16 +10,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 cfg = {
-    'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    13: [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    16: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    19: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name, num_classes=10):
+    def __init__(self, depth, num_classes=10):
+        assert depth in cfg, 'Error: model depth invalid or undefined!'
+        
         super(VGG, self).__init__()
-        self.feature_extractor = self._make_layers(cfg[vgg_name])
+        self.feature_extractor = self._make_layers(cfg[depth])
         self.classifier = nn.Sequential(
             nn.Linear(512, 512),
             nn.ReLU(inplace=True),

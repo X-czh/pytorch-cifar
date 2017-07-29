@@ -12,7 +12,9 @@ import torch.backends.cudnn as cudnn
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 
-from utils import get_net
+from utils import parse_model_name
+from utils import parse_milestones
+from utils import adjust_learning_rate
 from utils import get_current_time
 from utils import AverageMeter
 
@@ -20,8 +22,8 @@ from utils import AverageMeter
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Playground')
 parser.add_argument('--path', type=str, default='/home/x-czh/data_set', metavar='PATH',
                     help='data path (default: /home/x-czh/data_set)')
-parser.add_argument('--model', type=str, default='lenet', metavar='MODEL',
-                    help='model architecture (default: lenet)')
+parser.add_argument('--model', type=str, default='resnet-20', metavar='MODEL',
+                    help='model architecture (default: resnet-20)')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help = 'input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
@@ -30,6 +32,8 @@ parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                     help='learning rate (default: 0.01)')
+parser.add_argument('--milestones', type=str, default='0', metavar='M',
+                    help='milestones to adjust learning rate, ints split by "-" (default: "0")')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum (default: 0.9)')
 parser.add_argument('--weight-decay', type=float, default=1e-4, metavar='W',
@@ -84,16 +88,16 @@ def get_model(args):
         # Load checkpoint.
         print('==> Resuming from checkpoint..')
         assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-        checkpoint = torch.load('./checkpoint/ckpt.t7')
+        checkpoint = torch.load('./checkpoint/ckpt.pth')
         model = checkpoint['model']
         best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch'] + 1
+        start_epoch = checkpoint['epoch']
     else:
         print('==> Building model..')
-        model = get_net(args.model)
+        model = parse_model_name(args.model)
         best_acc = 0
         start_epoch = 1
-
+ 
     if args.cuda:
         model.cuda()
         model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
@@ -185,11 +189,11 @@ def test(args, test_loader, model, criterion, epoch, progress, best_acc, test_ti
         state = {
             'model': model.module if args.cuda else model,
             'acc': test_acc,
-            'epoch': epoch
+            'epoch': epoch + 1
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt.t7')
+        torch.save(state, './checkpoint/ckpt.pth')
         best_acc = test_acc
 
 if __name__ == '__main__':
@@ -206,7 +210,9 @@ if __name__ == '__main__':
     model, best_acc, start_epoch = get_model(args)
     criterion = get_criterion(args)
     optimizer = get_optimizer(args, model)
-
+    lr = args.lr
+    milestones = parse_milestones(args.milestones)
+    
     # Train and record progress
     progress = {}
     progress['train'] = []
@@ -215,6 +221,7 @@ if __name__ == '__main__':
     test_time = AverageMeter()
 
     for epoch in range(start_epoch, start_epoch + args.epochs):
+        adjust_learning_rate(optimizer, lr, epoch, milestones)
         train(args, train_loader, model, criterion, optimizer, epoch, progress, train_time)
         test(args, test_loader, model, criterion, epoch, progress, best_acc, test_time)
 

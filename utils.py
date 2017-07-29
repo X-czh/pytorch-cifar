@@ -1,37 +1,52 @@
 """
-Helper functions
+Helper functions and classes
 """
+from __future__ import print_function
 import datetime
 from models import *
 
 model_dict = {
-    'mlp': MLP(),
-    'lenet': LeNet(),
-    'vgg11': VGG('VGG11'),
-    'vgg13': VGG('VGG13'),
-    'vgg16': VGG('VGG16'),
-    'vgg19': VGG('VGG19'),
-    'resnet20': ResNet20(),
-    'resnet32': ResNet32(),
-    'resnet44': ResNet44(),
-    'resnet56': ResNet56(),
-    'resnet110': ResNet110(),
-    'resnet164': ResNet164(),
-    'resnet1001': ResNet1001(),
-    'densenet40': DenseNet40(),
-    'densenet100': DenseNet100(),
-    'densenet250': DenseNet250(),
-    'densenet190': DenseNet190(),
-    'densenet10':DenseNet10()
+    'mlp': MLP,
+    'lenet': LeNet,
+    'vgg': VGG,
+    'resnet': ResNet,
+    'resnetv2': ResNetV2,
+    # 'resnext': ResNeXt,
+    'densenet': DenseNet
 }
 
-def get_net(model_name):
-    """ Return a net corresponding to the given model name """
-    assert model_name in model_dict, 'Model not built in library'
-    return model_dict[model_name]
+def parse_model_name(model_name):
+    """Parses model name and returns model"""
+    if model_name.find('-') == -1:
+        arch = model_name
+        assert arch in model_dict, 'Error: model not found!'
+        model = model_dict[arch]()
+    else:
+        assert len(model_name.split('-')) == 2, 'Error: model name invalid'
+        arch, depth = model_name.split('-')
+        assert arch in model_dict, 'Error: model not found!'
+        depth = int(depth)
+        model = model_dict[arch](depth)
+    return model
+
+def parse_milestones(str):
+    """Parses the milestones argument and returns a list of int"""
+    try:
+        milestones = [int(e) for e in str.split('-')]
+    except:
+        print('Error: invlid input for milestones!')
+    return milestones
+
+def adjust_learning_rate(optimizer, lr, epoch, milestones):
+    """Sets the learning rate to the initial LR decayed by 10
+    once the number of epoch reaches one of the milestones"""
+    if epoch in milestones:
+        lr = lr * 0.1
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
 
 def get_current_time():
-    """ Return current time in the format of %yyyy-%mm-%dd_%hh-%mm-%ss """
+    """Returns current time in the format of %yyyy-%mm-%dd_%hh-%mm-%ss"""
     now = datetime.datetime.now()
     return now.strftime('%Y-%m-%d_%H-%M-%S')
 
