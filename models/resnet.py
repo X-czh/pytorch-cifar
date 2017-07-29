@@ -17,7 +17,7 @@ def conv3x3(in_channels, out_channels, stride=1):
 
 class BasicBlock(nn.Module):
     expansion = 1
-    
+
     def __init__(self, in_channels, out_channels, stride=1):
         super(BasicBlock, self).__init__()
 
@@ -77,12 +77,12 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, depth, num_classes=10):
         assert depth in cfg, 'Error: model depth invalid or undefined!'
-        
+
         super(ResNet, self).__init__()
         block = Bottleneck if depth > 110 else BasicBlock
         multiplier = (depth - 2) // 9 if depth > 110 else (depth - 2) // 6
         filters = [16, 16, 32, 64]
-        
+
         self.conv1 = conv3x3(3, filters[0])
         self.bn1 = nn.BatchNorm2d(filters[0])
         self.in_channels = filters[0]

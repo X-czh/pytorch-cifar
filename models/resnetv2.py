@@ -17,7 +17,7 @@ def conv3x3(in_channels, out_channels, stride=1):
 
 class PreActBlock(nn.Module):
     expansion = 1
-    
+
     def __init__(self, in_channels, out_channels, stride=1):
         super(PreActBlock, self).__init__()
 
@@ -25,7 +25,7 @@ class PreActBlock(nn.Module):
         self.conv1 = conv3x3(in_channels, out_channels, stride)
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.conv2 = conv3x3(out_channels, out_channels)
-        
+
         self.shortcut = nn.Sequential()
         if stride != 1 or in_channels != self.expansion * out_channels:
             self.shortcut = nn.Sequential(
@@ -34,8 +34,8 @@ class PreActBlock(nn.Module):
             )
 
     def forward(self, x):
-        x = F.relu(self.bn1(x))
         identity = x
+        x = F.relu(self.bn1(x))
         x = self.conv1(x)
         x = self.conv2(F.relu(self.bn2(x)))
         x += self.shortcut(identity)
@@ -64,8 +64,8 @@ class PreActBottleneck(nn.Module):
             )
 
     def forward(self, x):
-        x = F.relu(self.bn1(x))
         identity = x
+        x = F.relu(self.bn1(x))
         x = self.conv1(x)
         x = self.conv2(F.relu(self.bn2(x)))
         x = self.conv3(F.relu(self.bn3(x)))

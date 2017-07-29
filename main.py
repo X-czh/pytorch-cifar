@@ -97,7 +97,7 @@ def get_model(args):
         model = parse_model_name(args.model)
         best_acc = 0
         start_epoch = 1
- 
+
     if args.cuda:
         model.cuda()
         model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     optimizer = get_optimizer(args, model)
     lr = args.lr
     milestones = parse_milestones(args.milestones)
-    
+
     # Train and record progress
     progress = {}
     progress['train'] = []
