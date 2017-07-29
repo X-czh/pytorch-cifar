@@ -35,8 +35,7 @@ class PreActBlock(nn.Module):
 
     def forward(self, x):
         identity = x
-        x = F.relu(self.bn1(x))
-        x = self.conv1(x)
+        x = self.conv1(F.relu(self.bn1(x)))
         x = self.conv2(F.relu(self.bn2(x)))
         x += self.shortcut(identity)
         return x
@@ -65,8 +64,7 @@ class PreActBottleneck(nn.Module):
 
     def forward(self, x):
         identity = x
-        x = F.relu(self.bn1(x))
-        x = self.conv1(x)
+        x = self.conv1(F.relu(self.bn1(x)))
         x = self.conv2(F.relu(self.bn2(x)))
         x = self.conv3(F.relu(self.bn3(x)))
         x += self.shortcut(identity)
