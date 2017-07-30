@@ -22,7 +22,7 @@ def parse_model_name(model_name):
         assert arch in model_dict, 'Error: model not found!'
         model = model_dict[arch]()
     else:
-        assert len(model_name.split('-')) == 2, 'Error: model name invalid'
+        assert len(model_name.split('-')) == 2, 'Error: model name invalid!'
         arch, depth = model_name.split('-')
         assert arch in model_dict, 'Error: model not found!'
         depth = int(depth)

@@ -77,7 +77,7 @@ class DenseNet(nn.Module):
         out_channels = int(math.floor(reduction * in_channels))
         self.trans1 = Transition(in_channels, out_channels)
         in_channels = out_channels
-        
+
         self.dense2 = self._make_layers(in_channels, growth_rate, num_block, bottleneck)
         in_channels += num_block * growth_rate
         out_channels = int(math.floor(reduction * in_channels))
@@ -89,6 +89,14 @@ class DenseNet(nn.Module):
 
         self.bn = nn.BatchNorm2d(in_channels)
         self.fc = nn.Linear(in_channels, num_classes)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d): # apply kaiming_normal initilization
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def _make_layers(self, in_channels, growth_rate, num_block, bottelneck):
         layers = []

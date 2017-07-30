@@ -6,6 +6,8 @@ ResNet with pre-activation architectures
 Implemented the following paper:
 Kaiming He, et al. "Identity Mappings in Deep Residual Networks."
 """
+import math
+
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -86,6 +88,14 @@ class ResNetV2(nn.Module):
         self.conv4_x = self._make_layers(block, multiplier, filters[3], 2)
         self.bn4 = nn.BatchNorm2d(self.in_channels)
         self.fc = nn.Linear(self.in_channels, num_classes)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def _make_layers(self, block, num_block, out_channels, stride):
         layers = []
