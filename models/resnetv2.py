@@ -90,7 +90,7 @@ class ResNetV2(nn.Module):
         self.fc = nn.Linear(self.in_channels, num_classes)
 
         for m in self.modules():
-            if isinstance(m, nn.Conv2d):
+            if isinstance(m, nn.Conv2d): # apply kaiming_normal initilization
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
             elif isinstance(m, nn.BatchNorm2d):
