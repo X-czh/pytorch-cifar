@@ -1,5 +1,5 @@
 """
-ResNet with PyTorch
+ResNetV2 with PyTorch
 
 ResNet with pre-activation architectures
 
@@ -61,7 +61,7 @@ class PreActBottleneck(nn.Module):
         if stride != 1 or in_channels != self.expansion * out_channels:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_channels, self.expansion*out_channels,
-                          kernel_size=1, stride=stride, bias = False)
+                          kernel_size=1, stride=stride, bias=False)
             )
 
     def forward(self, x):

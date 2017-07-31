@@ -17,17 +17,16 @@ model_dict = {
 
 def parse_model_name(model_name):
     """Parses model name and returns model"""
+    depth = 0
     if model_name.find('-') == -1:
         arch = model_name
         assert arch in model_dict, 'Error: model not found!'
-        model = model_dict[arch]()
     else:
         assert len(model_name.split('-')) == 2, 'Error: model name invalid!'
         arch, depth = model_name.split('-')
         assert arch in model_dict, 'Error: model not found!'
         depth = int(depth)
-        model = model_dict[arch](depth)
-    return model
+    return arch, depth
 
 def parse_milestones(str):
     """Parses the milestones argument and returns a list of int"""

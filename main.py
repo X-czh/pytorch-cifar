@@ -6,12 +6,12 @@ import time
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
-from torchvision import datasets, transforms
 from torch.autograd import Variable
+from torchvision import datasets, transforms
 
+from utils import model_dict
 from utils import parse_model_name
 from utils import parse_milestones
 from utils import adjust_learning_rate
@@ -20,12 +20,14 @@ from utils import AverageMeter
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Playground')
-parser.add_argument('--path', type=str, default='/home/x-czh/data_set', metavar='PATH',
+parser.add_argument('--data-path', type=str, default='/home/x-czh/data_set', metavar='PATH',
                     help='data path (default: /home/x-czh/data_set)')
+parser.add_argument('--num-classes', type=int, choices=[10, 100], default=10, metavar='N',
+                    help='choose between 10/100')
 parser.add_argument('--model', type=str, default='resnet-20', metavar='MODEL',
                     help='model architecture (default: resnet-20)')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
-                    help = 'input batch size for training (default: 128)')
+                    help='input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                     help='input batch size for testing (default: 1000)')
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
@@ -52,6 +54,9 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
 def get_data_loader(args):
     kwargs = {'num_workers': args.workers, 'pin_memory': True} if args.cuda else {}
 
+    if not os.path.isdir(args.data_path):
+        os.makedirs(args.data_path)
+
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -64,10 +69,18 @@ def get_data_loader(args):
         transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
                              std=(0.2023, 0.1994, 0.2010))
     ])
-    trainset = datasets.CIFAR10(root=args.path, train=True,
-                                transform=transform_train, download=False)
-    testset = datasets.CIFAR10(root=args.path, train=False,
-                               transform=transform_test, download=False)
+
+    if args.num_classes == 10:
+        trainset = datasets.CIFAR10(root=args.data_path, train=True,
+                                    transform=transform_train, download=True)
+        testset = datasets.CIFAR10(root=args.data_path, train=False,
+                                   transform=transform_test, download=False)
+    else:
+        trainset = datasets.CIFAR100(root=args.data_path, train=True,
+                                     transform=transform_train, download=False)
+        testset = datasets.CIFAR100(root=args.data_path, train=False,
+                                    transform=transform_test, download=False)
+
     train_loader = torch.utils.data.DataLoader(
         dataset=trainset,
         batch_size=args.batch_size,
@@ -94,7 +107,11 @@ def get_model(args):
         start_epoch = checkpoint['epoch']
     else:
         print('==> Building model..')
-        model = parse_model_name(args.model)
+        arch, depth = parse_model_name(args.model)
+        if depth != 0:
+            model = model_dict[arch](depth=depth, num_classes=args.num_classes)
+        else:
+            model = model_dict[arch](num_classes=args.num_classes)
         best_acc = 0
         start_epoch = 1
 
