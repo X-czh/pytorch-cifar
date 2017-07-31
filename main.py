@@ -74,12 +74,12 @@ def get_data_loader(args):
         trainset = datasets.CIFAR10(root=args.data_path, train=True,
                                     transform=transform_train, download=True)
         testset = datasets.CIFAR10(root=args.data_path, train=False,
-                                   transform=transform_test, download=False)
+                                   transform=transform_test, download=True)
     else:
         trainset = datasets.CIFAR100(root=args.data_path, train=True,
-                                     transform=transform_train, download=False)
+                                     transform=transform_train, download=True)
         testset = datasets.CIFAR100(root=args.data_path, train=False,
-                                    transform=transform_test, download=False)
+                                    transform=transform_test, download=True)
 
     train_loader = torch.utils.data.DataLoader(
         dataset=trainset,
