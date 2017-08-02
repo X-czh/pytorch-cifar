@@ -1,4 +1,5 @@
 /checkpoint/*
+/info/.ipynb_checkpoints/*
+/temp/*
 *.pyc
 *.pkl
-*.ipynb
