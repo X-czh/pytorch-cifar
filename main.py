@@ -1,5 +1,3 @@
-from __future__ import print_function, division
-
 import argparse
 import os
 import time
@@ -8,7 +6,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
 from torchvision import datasets, transforms
 
 from utils import model_dict
@@ -18,18 +15,21 @@ from utils import adjust_learning_rate
 from utils import get_current_time
 from utils import AverageMeter
 
+# device to use
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Playground')
-parser.add_argument('--data-path', type=str, default='/home/x-czh/data_set', metavar='PATH',
-                    help='data path (default: /home/x-czh/data_set)')
+parser.add_argument('--data-path', type=str, default='./data', metavar='PATH',
+                    help='data path (default: ./data)')
 parser.add_argument('--num-classes', type=int, choices=[10, 100], default=10, metavar='N',
                     help='choose between 10/100')
 parser.add_argument('--model', type=str, default='resnet-20', metavar='MODEL',
                     help='model architecture (default: resnet-20)')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                    help='input batch size for testing (default: 1000)')
+parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
+                    help='input batch size for testing (default: 128)')
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
@@ -40,20 +40,19 @@ parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum (default: 0.9)')
 parser.add_argument('--weight-decay', type=float, default=1e-4, metavar='W',
                     help='weight decay (default: 1e-4)')
-parser.add_argument('--workers', type=int, default=2, metavar='N',
-                    help='number of data loading workers (default: 2)')
+parser.add_argument('--workers', type=int, default=4, metavar='N',
+                    help='number of data loading workers (default: 4)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
-parser.add_argument('--seed', type=int, default=1, metavar='S',
-                    help='random seed (default: 1)')
+parser.add_argument('--seed', type=int, default=75, metavar='S',
+                    help='random seed (default: 75)')
 parser.add_argument('--resume', action='store_true', default=False,
                     help='resume from latest checkpoint')
-parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='how many batches to wait before logging training status')
 
 def get_data_loader(args):
-    kwargs = {'num_workers': args.workers, 'pin_memory': True} if args.cuda else {}
-
+    print('==> Preparing Data..')
     if not os.path.isdir(args.data_path):
         os.makedirs(args.data_path)
 
@@ -85,13 +84,15 @@ def get_data_loader(args):
         dataset=trainset,
         batch_size=args.batch_size,
         shuffle=True,
-        **kwargs
+        num_workers=args.workers,
+        pin_memory=args.cuda
     )
     test_loader = torch.utils.data.DataLoader(
         dataset=testset,
         batch_size=args.test_batch_size,
         shuffle=True,
-        **kwargs
+        num_workers=args.workers,
+        pin_memory=args.cuda
     )
 
     return train_loader, test_loader
@@ -115,17 +116,15 @@ def get_model(args):
         best_acc = 0
         start_epoch = 1
 
+    model.to(device)
     if args.cuda:
-        model.cuda()
         model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
         cudnn.benchmark = True
 
     return model, best_acc, start_epoch
 
 def get_criterion(args):
-    criterion = nn.CrossEntropyLoss()
-    if args.cuda:
-        criterion.cuda()
+    criterion = nn.CrossEntropyLoss().to(device)
     return criterion
 
 def get_optimizer(args, model):
@@ -149,31 +148,29 @@ def train(args, train_loader, model, criterion, optimizer, epoch, progress, trai
         # Measure data loading time
         data_time.update(time.time() - end)
 
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
+        data, target = data.to(device), target.to(device)
         optimizer.zero_grad() # zeroes the gradient buffers of all parameters
         output = model(data)
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
         pred = output.data.max(1)[1]
-        correct += pred.eq(target.data).cpu().sum()
+        correct += pred.eq(target.data).sum().item()
 
         # Measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
         # Print log
-        if batch_idx % args.log_interval == 0:
+        if (batch_idx + 1) % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.data[0]))
+                100. * batch_idx / len(train_loader), loss.item()))
     train_time.update(batch_time.get_sum())
 
     # Save progress
     train_acc = 100. * correct / len(train_loader.dataset)
-    progress['train'].append((epoch, loss.data[0], train_acc,
+    progress['train'].append((epoch, loss.item(), train_acc,
                               batch_time.get_sum(), batch_time.get_avg(),
                               data_time.get_sum(), data_time.get_avg()))
 
@@ -183,14 +180,13 @@ def test(args, test_loader, model, criterion, epoch, progress, best_acc, test_ti
     correct = 0
 
     end = time.time()
-    for data, target in test_loader:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
-        output = model(data)
-        test_loss += criterion(output, target).data[0]
-        pred = output.data.max(1)[1]
-        correct += pred.eq(target.data).cpu().sum()
+    with torch.no_grad(): # disables gradient calculation
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            test_loss += criterion(output, target).item()
+            pred = output.data.max(1)[1]
+            correct += pred.eq(target.data).sum().item()
     test_time.update(time.time() - end)
 
     # Print and save progress
@@ -216,12 +212,15 @@ def test(args, test_loader, model, criterion, epoch, progress, best_acc, test_ti
 if __name__ == '__main__':
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-
-    # Set the seed for generating random numbers
+    if args.no_cuda:
+        device = torch.device('cpu')
     torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
-
+    print('==> Training Settings:')
+    for arg in vars(args):
+        print(arg, getattr(args, arg))
+    
     # Set data loader, model, criteriron, and optimizer
     train_loader, test_loader = get_data_loader(args)
     model, best_acc, start_epoch = get_model(args)
@@ -237,6 +236,7 @@ if __name__ == '__main__':
     train_time = AverageMeter()
     test_time = AverageMeter()
 
+    print('==> Start training..')
     for epoch in range(start_epoch, start_epoch + args.epochs):
         adjust_learning_rate(optimizer, lr, epoch, milestones)
         train(args, train_loader, model, criterion, optimizer, epoch, progress, train_time)
@@ -248,7 +248,7 @@ if __name__ == '__main__':
         # record average test time per image and average test time per test_loader.dataset
 
     # Save progress
-    import cPickle as pickle
+    import pickle
 
     current_time = get_current_time()
     pickle.dump(progress, open('./' + args.model + ('-resume' if args.resume else '') +
